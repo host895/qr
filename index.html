@@ -5,7 +5,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#000000">
-
 <title>Easy Trick - QR Code Generator</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
@@ -237,13 +236,13 @@ body {
     height: auto;
 }
 
-.btn-download {
+.btn-share {
     border-color: var(--neon-red);
     color: var(--neon-red);
     box-shadow: 0 0 10px rgba(255,0,60,.2),inset 0 0 10px rgba(255,0,60,.1);
 }
 
-.btn-download:hover {
+.btn-share:hover {
     background: var(--neon-red);
     color: #000;
     box-shadow: 0 0 20px rgba(255,0,60,.6);
@@ -315,11 +314,11 @@ body {
             <div id="qrcode"></div>
         </div>
 
-        <button class="btn btn-download" id="downloadButton" onclick="downloadQR()">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+        <button class="btn btn-share" onclick="shareQR()">
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7a3.1 3.1 0 0 0 0-1.39l7.05-4.11A3 3 0 1 0 15 5c0 .23.03.46.08.68L8.03 9.79a3 3 0 1 0 0 4.42l7.12 4.16c-.05.2-.07.41-.07.63a2.92 2.92 0 1 0 2.92-2.92z"/>
             </svg>
-            Download QR Code
+            Share QR Code
         </button>
 
         <p class="status" id="status"></p>
@@ -329,12 +328,9 @@ body {
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
 <script>
-
-let currentQRCanvas = null;
 
 function generateQR() {
 
@@ -368,11 +364,6 @@ function generateQR() {
         });
 
         document.getElementById("resultBox").style.display = "block";
-
-        setTimeout(() => {
-            currentQRCanvas = qrContainer.querySelector("canvas");
-        }, 100);
-
         document.getElementById("status").style.display = "none";
 
     } catch (error) {
@@ -381,12 +372,9 @@ function generateQR() {
 }
 
 
-async function downloadQR() {
+async function shareQR() {
 
-    const qrContainer = document.getElementById("qrcode");
-
-    const canvas = qrContainer.querySelector("canvas");
-
+    const canvas = document.querySelector("#qrcode canvas");
     const status = document.getElementById("status");
 
     if (!canvas) {
@@ -394,17 +382,20 @@ async function downloadQR() {
         return;
     }
 
-    status.style.display = "block";
-    status.textContent = "Preparing your QR Code...";
-
     try {
+
+        if (!navigator.share || !navigator.canShare) {
+            status.style.display = "block";
+            status.textContent = "Image sharing is not supported in this browser. Please open the website in Chrome.";
+            return;
+        }
 
         const blob = await new Promise(resolve => {
             canvas.toBlob(resolve, "image/png");
         });
 
         if (!blob) {
-            throw new Error("Could not create image");
+            throw new Error("Could not create QR image");
         }
 
         const file = new File(
@@ -413,98 +404,38 @@ async function downloadQR() {
             { type: "image/png" }
         );
 
-        /*
-         * Method 1:
-         * Native Android share sheet.
-         * User can choose Save to Files or another supported app.
-         */
-
-        if (
-            navigator.share &&
-            navigator.canShare &&
-            navigator.canShare({ files: [file] })
-        ) {
-
-            try {
-
-                await navigator.share({
-                    files: [file],
-                    title: "Easy Trick QR Code"
-                });
-
-                status.textContent = "Share menu opened successfully.";
-                return;
-
-            } catch (error) {
-
-                if (error.name === "AbortError") {
-                    status.textContent = "Sharing cancelled.";
-                    return;
-                }
-
-            }
+        if (!navigator.canShare({ files: [file] })) {
+            status.style.display = "block";
+            status.textContent = "Your device does not support sharing image files.";
+            return;
         }
 
-        /*
-         * Method 2:
-         * Standard browser download.
-         */
+        await navigator.share({
+            files: [file],
+            title: "Easy Trick QR Code"
+        });
 
-        const imageURL = URL.createObjectURL(blob);
-
-        const link = document.createElement("a");
-
-        link.href = imageURL;
-        link.download = "Easy-Trick-QR-Code.png";
-        link.style.display = "none";
-
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-
-        status.textContent =
-            "If download did not start, open this image in your browser and save it.";
-
-        /*
-         * Method 3:
-         * Open the image in a new tab as a final fallback.
-         */
-
-        setTimeout(() => {
-
-            const preview = window.open(imageURL, "_blank");
-
-            if (!preview) {
-                status.textContent =
-                    "Your browser blocked the download. Please open the website in Chrome.";
-            }
-
-        }, 500);
-
-        setTimeout(() => {
-            URL.revokeObjectURL(imageURL);
-        }, 120000);
+        status.style.display = "block";
+        status.textContent = "QR Code shared successfully!";
 
     } catch (error) {
 
-        status.textContent =
-            "Unable to export the image. Please try again or open in Chrome.";
+        if (error.name === "AbortError") {
+            status.style.display = "none";
+            return;
+        }
+
+        status.style.display = "block";
+        status.textContent = "Unable to share the QR image. Please try again.";
 
         console.error(error);
-
     }
 }
 
 
-// Telegram Web App initialization
-
 if (window.Telegram && window.Telegram.WebApp) {
-
-    const tg = window.Telegram.WebApp;
-
-    tg.ready();
-    tg.expand();
-
+    Telegram.WebApp.ready();
+    Telegram.WebApp.expand();
 }
 
 </script>
