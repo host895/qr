@@ -4,6 +4,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#000000">
+
 <title>Easy Trick - QR Code Generator</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
@@ -247,6 +249,14 @@ body {
     box-shadow: 0 0 20px rgba(255,0,60,.6);
 }
 
+.status {
+    color: var(--neon-blue);
+    font-size: 13px;
+    margin-top: 15px;
+    display: none;
+    line-height: 1.6;
+}
+
 @media(max-width:600px) {
     .container {
         padding: 30px 20px;
@@ -305,12 +315,14 @@ body {
             <div id="qrcode"></div>
         </div>
 
-        <button class="btn btn-download" onclick="downloadQR()">
+        <button class="btn btn-download" id="downloadButton" onclick="downloadQR()">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
             </svg>
             Download QR Code
         </button>
+
+        <p class="status" id="status"></p>
 
     </div>
 
@@ -318,7 +330,11 @@ body {
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+
 <script>
+
+let currentQRCanvas = null;
 
 function generateQR() {
 
@@ -353,6 +369,12 @@ function generateQR() {
 
         document.getElementById("resultBox").style.display = "block";
 
+        setTimeout(() => {
+            currentQRCanvas = qrContainer.querySelector("canvas");
+        }, 100);
+
+        document.getElementById("status").style.display = "none";
+
     } catch (error) {
         alert("Please enter a valid URL!");
     }
@@ -362,12 +384,18 @@ function generateQR() {
 async function downloadQR() {
 
     const qrContainer = document.getElementById("qrcode");
+
     const canvas = qrContainer.querySelector("canvas");
+
+    const status = document.getElementById("status");
 
     if (!canvas) {
         alert("Please generate a QR Code first!");
         return;
     }
+
+    status.style.display = "block";
+    status.textContent = "Preparing your QR Code...";
 
     try {
 
@@ -376,7 +404,7 @@ async function downloadQR() {
         });
 
         if (!blob) {
-            throw new Error("Image creation failed");
+            throw new Error("Could not create image");
         }
 
         const file = new File(
@@ -385,133 +413,98 @@ async function downloadQR() {
             { type: "image/png" }
         );
 
-        // Try native sharing on supported devices
+        /*
+         * Method 1:
+         * Native Android share sheet.
+         * User can choose Save to Files or another supported app.
+         */
+
         if (
             navigator.share &&
             navigator.canShare &&
             navigator.canShare({ files: [file] })
         ) {
+
             try {
+
                 await navigator.share({
                     files: [file],
                     title: "Easy Trick QR Code"
                 });
 
+                status.textContent = "Share menu opened successfully.";
                 return;
 
             } catch (error) {
 
                 if (error.name === "AbortError") {
+                    status.textContent = "Sharing cancelled.";
                     return;
                 }
+
             }
         }
 
-        // Fallback: open the QR image in a new page
+        /*
+         * Method 2:
+         * Standard browser download.
+         */
+
         const imageURL = URL.createObjectURL(blob);
 
-        const preview = window.open("", "_blank");
+        const link = document.createElement("a");
 
-        if (preview) {
+        link.href = imageURL;
+        link.download = "Easy-Trick-QR-Code.png";
+        link.style.display = "none";
 
-            preview.document.write(`
-                <!DOCTYPE html>
-                <html lang="en">
-                <head>
-                    <meta charset="UTF-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
 
-                    <title>Easy Trick QR Code</title>
+        status.textContent =
+            "If download did not start, open this image in your browser and save it.";
 
-                    <style>
-                        * {
-                            box-sizing: border-box;
-                        }
+        /*
+         * Method 3:
+         * Open the image in a new tab as a final fallback.
+         */
 
-                        body {
-                            margin: 0;
-                            padding: 25px 15px;
-                            min-height: 100vh;
-                            background: #000;
-                            color: #00f3ff;
-                            font-family: Arial, sans-serif;
-                            display: flex;
-                            flex-direction: column;
-                            align-items: center;
-                            justify-content: center;
-                            text-align: center;
-                        }
+        setTimeout(() => {
 
-                        h2 {
-                            text-shadow: 0 0 12px #00f3ff;
-                        }
+            const preview = window.open(imageURL, "_blank");
 
-                        p {
-                            color: #aaa;
-                            line-height: 1.6;
-                        }
+            if (!preview) {
+                status.textContent =
+                    "Your browser blocked the download. Please open the website in Chrome.";
+            }
 
-                        img {
-                            width: 90%;
-                            max-width: 350px;
-                            height: auto;
-                            background: #fff;
-                            padding: 12px;
-                            border-radius: 8px;
-                            margin-top: 20px;
-                        }
+        }, 500);
 
-                        a {
-                            margin-top: 25px;
-                            padding: 14px 25px;
-                            color: #ff003c;
-                            border: 1px solid #ff003c;
-                            border-radius: 5px;
-                            text-decoration: none;
-                            font-weight: bold;
-                        }
-                    </style>
-                </head>
-
-                <body>
-
-                    <h2>EASY TRICK QR CODE</h2>
-
-                    <p>Long press the QR Code image and select Save Image.</p>
-
-                    <img
-                        src="${imageURL}"
-                        alt="QR Code">
-
-                    <a href="${imageURL}" download="Easy-Trick-QR-Code.png">
-                        DOWNLOAD IMAGE
-                    </a>
-
-                </body>
-                </html>
-            `);
-
-            preview.document.close();
-
-        } else {
-
-            // Last fallback
-            const link = document.createElement("a");
-
-            link.href = imageURL;
-            link.download = "Easy-Trick-QR-Code.png";
-
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-
-        }
+        setTimeout(() => {
+            URL.revokeObjectURL(imageURL);
+        }, 120000);
 
     } catch (error) {
 
-        alert("Unable to download QR Code. Please try opening the website in Chrome.");
+        status.textContent =
+            "Unable to export the image. Please try again or open in Chrome.";
+
+        console.error(error);
 
     }
+}
+
+
+// Telegram Web App initialization
+
+if (window.Telegram && window.Telegram.WebApp) {
+
+    const tg = window.Telegram.WebApp;
+
+    tg.ready();
+    tg.expand();
+
 }
 
 </script>
