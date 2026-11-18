@@ -5,6 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#000000">
+
 <title>Easy Trick - QR Code Generator</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
@@ -236,6 +237,99 @@ body {
     height: auto;
 }
 
+.color-panel {
+    border: 1px solid #333;
+    background: rgba(0,0,0,.55);
+    padding: 18px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.color-title {
+    color: var(--neon-blue);
+    font-size: 14px;
+    letter-spacing: 1px;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.color-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.color-option {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.color-option label {
+    color: #aaa;
+    font-size: 12px;
+}
+
+.color-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #111;
+    border: 1px solid #333;
+    padding: 7px;
+    border-radius: 4px;
+}
+
+.color-input-wrap input[type="color"] {
+    width: 35px;
+    height: 30px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    padding: 0;
+}
+
+.color-value {
+    color: #ddd;
+    font-size: 12px;
+    text-transform: uppercase;
+}
+
+.preview-frame {
+    position: relative;
+    display: inline-block;
+    padding: 10px;
+    border: 1px solid #333;
+    border-radius: 5px;
+    margin-bottom: 20px;
+}
+
+.preview-frame::before,
+.preview-frame::after {
+    content: '';
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    pointer-events: none;
+}
+
+.preview-frame::before {
+    top: -1px;
+    left: -1px;
+    border-top: 3px solid var(--border-top);
+    border-left: 3px solid var(--border-top);
+    filter: drop-shadow(0 0 5px var(--border-top));
+}
+
+.preview-frame::after {
+    bottom: -1px;
+    right: -1px;
+    border-bottom: 3px solid var(--border-bottom);
+    border-right: 3px solid var(--border-bottom);
+    filter: drop-shadow(0 0 5px var(--border-bottom));
+}
+
 .btn-share {
     border-color: var(--neon-red);
     color: var(--neon-red);
@@ -285,7 +379,6 @@ body {
     </div>
 
     <div class="input-group">
-
         <input
             type="url"
             id="url"
@@ -296,7 +389,6 @@ body {
             <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
             <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
         </svg>
-
     </div>
 
     <button class="btn btn-primary" onclick="generateQR()">
@@ -310,8 +402,43 @@ body {
 
         <p class="result-title">YOUR QR CODE IS READY</p>
 
-        <div class="qr-container">
-            <div id="qrcode"></div>
+        <div class="preview-frame" id="previewFrame">
+            <div class="qr-container">
+                <div id="qrcode"></div>
+            </div>
+        </div>
+
+        <div class="color-panel">
+
+            <p class="color-title">CUSTOMIZE QR FRAME COLORS</p>
+
+            <div class="color-options">
+
+                <div class="color-option">
+                    <label for="topColor">TOP / LEFT BORDER</label>
+                    <div class="color-input-wrap">
+                        <input
+                            type="color"
+                            id="topColor"
+                            value="#00f3ff"
+                            oninput="updateColors()">
+                        <span class="color-value" id="topColorValue">#00F3FF</span>
+                    </div>
+                </div>
+
+                <div class="color-option">
+                    <label for="bottomColor">BOTTOM / RIGHT BORDER</label>
+                    <div class="color-input-wrap">
+                        <input
+                            type="color"
+                            id="bottomColor"
+                            value="#ff003c"
+                            oninput="updateColors()">
+                        <span class="color-value" id="bottomColorValue">#FF003C</span>
+                    </div>
+                </div>
+
+            </div>
         </div>
 
         <button class="btn btn-share" onclick="shareQR()">
@@ -331,6 +458,21 @@ body {
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
 <script>
+
+function updateColors() {
+
+    const topColor = document.getElementById("topColor").value;
+    const bottomColor = document.getElementById("bottomColor").value;
+
+    document.documentElement.style.setProperty("--border-top", topColor);
+    document.documentElement.style.setProperty("--border-bottom", bottomColor);
+
+    document.getElementById("topColorValue").textContent = topColor.toUpperCase();
+    document.getElementById("bottomColorValue").textContent = bottomColor.toUpperCase();
+}
+
+updateColors();
+
 
 function generateQR() {
 
@@ -366,37 +508,170 @@ function generateQR() {
         document.getElementById("resultBox").style.display = "block";
         document.getElementById("status").style.display = "none";
 
+        setTimeout(() => {
+            updateColors();
+        }, 100);
+
     } catch (error) {
         alert("Please enter a valid URL!");
     }
 }
 
 
+function createDesignedImage(qrCanvas) {
+
+    return new Promise((resolve, reject) => {
+
+        const width = 420;
+        const height = 470;
+
+        const canvas = document.createElement("canvas");
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+
+        if (!ctx) {
+            reject(new Error("Canvas is not supported"));
+            return;
+        }
+
+        const topColor = document.getElementById("topColor").value;
+        const bottomColor = document.getElementById("bottomColor").value;
+
+        // Background
+        ctx.fillStyle = "#050505";
+        ctx.fillRect(0, 0, width, height);
+
+        // Subtle background glow
+        const glow = ctx.createRadialGradient(
+            width / 2, 150, 10,
+            width / 2, 150, 260
+        );
+
+        glow.addColorStop(0, topColor + "30");
+        glow.addColorStop(1, "#050505");
+
+        ctx.fillStyle = glow;
+        ctx.fillRect(0, 0, width, height);
+
+        // Main outer frame
+        ctx.strokeStyle = "#333333";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(20, 20, width - 40, height - 40);
+
+        // Top left neon corners
+        ctx.save();
+
+        ctx.strokeStyle = topColor;
+        ctx.lineWidth = 5;
+        ctx.shadowColor = topColor;
+        ctx.shadowBlur = 18;
+
+        ctx.beginPath();
+        ctx.moveTo(20, 70);
+        ctx.lineTo(20, 20);
+        ctx.lineTo(70, 20);
+        ctx.stroke();
+
+        ctx.restore();
+
+        // Bottom right neon corners
+        ctx.save();
+
+        ctx.strokeStyle = bottomColor;
+        ctx.lineWidth = 5;
+        ctx.shadowColor = bottomColor;
+        ctx.shadowBlur = 18;
+
+        ctx.beginPath();
+        ctx.moveTo(width - 70, height - 20);
+        ctx.lineTo(width - 20, height - 20);
+        ctx.lineTo(width - 20, height - 70);
+        ctx.stroke();
+
+        ctx.restore();
+
+        // Brand title
+        ctx.save();
+
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "900 27px Arial";
+        ctx.textAlign = "center";
+        ctx.shadowColor = topColor;
+        ctx.shadowBlur = 12;
+
+        ctx.fillText("EASY TRICK", width / 2, 80);
+
+        ctx.restore();
+
+        // Subtitle
+        ctx.fillStyle = topColor;
+        ctx.font = "15px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("QR CODE GENERATOR", width / 2, 108);
+
+        // QR white background
+        const qrSize = 260;
+        const qrX = (width - qrSize) / 2;
+        const qrY = 135;
+
+        ctx.save();
+
+        ctx.shadowColor = topColor;
+        ctx.shadowBlur = 18;
+
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(qrX - 10, qrY - 10, qrSize + 20, qrSize + 20);
+
+        ctx.restore();
+
+        // QR image
+        ctx.drawImage(
+            qrCanvas,
+            qrX,
+            qrY,
+            qrSize,
+            qrSize
+        );
+
+        // Bottom label
+        ctx.fillStyle = "#aaaaaa";
+        ctx.font = "13px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("GENERATED WITH EASY TRICK", width / 2, 435);
+
+        // Export PNG
+        canvas.toBlob(blob => {
+
+            if (blob) {
+                resolve(blob);
+            } else {
+                reject(new Error("Image export failed"));
+            }
+
+        }, "image/png");
+    });
+}
+
+
 async function shareQR() {
 
-    const canvas = document.querySelector("#qrcode canvas");
+    const qrCanvas = document.querySelector("#qrcode canvas");
     const status = document.getElementById("status");
 
-    if (!canvas) {
+    if (!qrCanvas) {
         alert("Please generate a QR Code first!");
         return;
     }
 
+    status.style.display = "block";
+    status.textContent = "Preparing your designed QR Code...";
+
     try {
 
-        if (!navigator.share || !navigator.canShare) {
-            status.style.display = "block";
-            status.textContent = "Image sharing is not supported in this browser. Please open the website in Chrome.";
-            return;
-        }
-
-        const blob = await new Promise(resolve => {
-            canvas.toBlob(resolve, "image/png");
-        });
-
-        if (!blob) {
-            throw new Error("Could not create QR image");
-        }
+        const blob = await createDesignedImage(qrCanvas);
 
         const file = new File(
             [blob],
@@ -404,19 +679,73 @@ async function shareQR() {
             { type: "image/png" }
         );
 
-        if (!navigator.canShare({ files: [file] })) {
-            status.style.display = "block";
-            status.textContent = "Your device does not support sharing image files.";
+        if (
+            navigator.share &&
+            navigator.canShare &&
+            navigator.canShare({ files: [file] })
+        ) {
+
+            await navigator.share({
+                files: [file],
+                title: "Easy Trick QR Code"
+            });
+
+            status.textContent = "QR Code shared successfully!";
             return;
         }
 
-        await navigator.share({
-            files: [file],
-            title: "Easy Trick QR Code"
-        });
+        // Fallback: open the designed image
+        const imageURL = URL.createObjectURL(blob);
 
-        status.style.display = "block";
-        status.textContent = "QR Code shared successfully!";
+        const preview = window.open("", "_blank");
+
+        if (preview) {
+
+            preview.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1">
+                    <title>Easy Trick QR Code</title>
+                    <style>
+                        body {
+                            margin: 0;
+                            padding: 20px;
+                            background: #000;
+                            color: #00f3ff;
+                            font-family: Arial;
+                            text-align: center;
+                        }
+                        img {
+                            display: block;
+                            width: 100%;
+                            max-width: 420px;
+                            margin: 25px auto;
+                        }
+                        p {
+                            color: #aaa;
+                            line-height: 1.6;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <h3>EASY TRICK QR CODE</h3>
+                    <p>Long press the image to save or share it.</p>
+                    <img src="${imageURL}" alt="QR Code">
+                </body>
+                </html>
+            `);
+
+            preview.document.close();
+
+            status.textContent = "Image opened. Long press it to save or share.";
+
+        } else {
+
+            status.textContent = "Sharing is not supported here. Please open the website in Chrome.";
+
+        }
 
     } catch (error) {
 
@@ -425,10 +754,10 @@ async function shareQR() {
             return;
         }
 
-        status.style.display = "block";
-        status.textContent = "Unable to share the QR image. Please try again.";
-
         console.error(error);
+
+        status.textContent = "Unable to share image. Please try again.";
+
     }
 }
 
