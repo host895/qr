@@ -602,7 +602,7 @@ function createDesignedImage(qrCanvas) {
         ctx.shadowColor = topColor;
         ctx.shadowBlur = 12;
 
-        ctx.fillText("EASY TRICK", width / 2, 80);
+        ctx.fillText("FastDownload", width / 2, 80);
 
         ctx.restore();
 
@@ -610,7 +610,7 @@ function createDesignedImage(qrCanvas) {
         ctx.fillStyle = topColor;
         ctx.font = "15px Arial";
         ctx.textAlign = "center";
-        ctx.fillText("QR CODE GENERATOR", width / 2, 108);
+        ctx.fillText("Fast file downloads by QR", width / 2, 108);
 
         // QR white background
         const qrSize = 260;
@@ -638,9 +638,9 @@ function createDesignedImage(qrCanvas) {
 
         // Bottom label
         ctx.fillStyle = "#aaaaaa";
-        ctx.font = "13px Arial";
+        ctx.font = "10px Arial";
         ctx.textAlign = "center";
-        ctx.fillText("GENERATED WITH EASY TRICK", width / 2, 435);
+        ctx.fillText("A friend shared a file with you; scan the QR code to download it. ", width / 2, 435);
 
         // Export PNG
         canvas.toBlob(blob => {
